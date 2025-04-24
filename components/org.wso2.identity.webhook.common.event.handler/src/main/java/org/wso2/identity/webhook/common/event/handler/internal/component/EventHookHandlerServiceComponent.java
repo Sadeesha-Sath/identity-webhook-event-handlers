@@ -38,6 +38,7 @@ import org.wso2.identity.event.common.publisher.EventPublisherService;
 import org.wso2.identity.webhook.common.event.handler.api.builder.LoginEventPayloadBuilder;
 import org.wso2.identity.webhook.common.event.handler.internal.constant.Constants;
 import org.wso2.identity.webhook.common.event.handler.internal.handler.LoginEventHookHandler;
+import org.wso2.identity.webhook.common.event.handler.internal.handler.SessionEventHookHandler;
 import org.wso2.identity.webhook.common.event.handler.internal.util.EventConfigManager;
 import org.wso2.identity.webhook.common.event.handler.internal.util.EventHookHandlerInternalUtils;
 
@@ -68,6 +69,27 @@ public class EventHookHandlerServiceComponent {
             } else {
                 log.error("Login Event Handler is not enabled.");
             }
+
+            String isSessionEventHandlerEnabled = getIdentityEventProperty(Constants.SESSION_EVENT_HOOK_NAME, Constants.SESSION_EVENT_HOOK_ENABLED);
+            if (isSessionEventHandlerEnabled != null && isSessionEventHandlerEnabled.equalsIgnoreCase(Boolean.TRUE.toString())) {
+                log.info("Session Event Handler is enabled.");
+                bundleContext.registerService(AbstractEventHandler.class.getName(),
+                        new SessionEventHookHandler(EventHookHandlerInternalUtils.getInstance(),
+                                EventConfigManager.getInstance()), null);
+            } else {
+                log.error("Session Event Handler is not enabled.");
+            }
+
+            String isCredentialEventHandlerEnabled = getIdentityEventProperty(Constants.CREDENTIAL_EVENT_HOOK_NAME, Constants.CREDENTIAL_EVENT_HOOK_ENABLED);
+            if (isCredentialEventHandlerEnabled != null && isCredentialEventHandlerEnabled.equalsIgnoreCase(Boolean.TRUE.toString())) {
+                log.info("Credentials Event Handler is enabled.");
+                bundleContext.registerService(AbstractEventHandler.class.getName(),
+                        new CredentialEventHookHandler(EventHookHandlerInternalUtils.getInstance(),
+                                EventConfigManager.getInstance()), null);
+            } else {
+                log.error("Credential Event Handler is not enabled.");
+            }
+
         } catch (IdentityEventServerException e) {
             log.error("Error while activating event handler.", e);
         }

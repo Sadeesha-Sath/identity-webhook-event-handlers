@@ -41,6 +41,12 @@ public class Constants {
     public static final String RESOURCE_TYPE = "resourceTypeName";
     public static final String RESOURCE_NAME = "resourceName";
 
+    public static final String SESSION_EVENT_HOOK_NAME = "SessionEventHook";
+    public static final String SESSION_EVENT_HOOK_ENABLED = "SessionEventHook.enable";
+
+    public static final String CREDENTIAL_EVENT_HOOK_NAME = "CredentialEventHook";
+    public static final String CREDENTIAL_EVENT_HOOK_ENABLED = "CredentialEventHook.enable";
+
     /**
      * Constants for event config names (keys).
      * These names will be equal to the config attribute keys stored in the core config store.
@@ -52,6 +58,15 @@ public class Constants {
 
         private EventHandlerKey() {
 
+        }
+    }
+
+    public enum EventSchema {
+        WSO2,
+        CAEP,
+        RISC;
+
+        EventSchema() {
         }
     }
 }

@@ -9,6 +9,12 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.configuration.mgt.core.exception.ConfigurationManagementException;
+import org.wso2.carbon.identity.configuration.mgt.core.model.Resources;
+import org.wso2.carbon.identity.configuration.mgt.core.search.ComplexCondition;
+import org.wso2.carbon.identity.configuration.mgt.core.search.Condition;
+import org.wso2.carbon.identity.configuration.mgt.core.search.PrimitiveCondition;
+import org.wso2.carbon.identity.configuration.mgt.core.search.constant.ConditionType;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.event.IdentityEventException;
@@ -18,15 +24,19 @@ import org.wso2.identity.event.common.publisher.model.EventPayload;
 import org.wso2.identity.event.common.publisher.model.SecurityEventTokenPayload;
 import org.wso2.identity.webhook.common.event.handler.api.model.EventData;
 import org.wso2.identity.webhook.common.event.handler.internal.component.EventHookHandlerDataHolder;
+import org.wso2.identity.webhook.common.event.handler.internal.config.EventPublisherConfig;
 import org.wso2.identity.webhook.common.event.handler.internal.constant.Constants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils.CORRELATION_ID_MDC;
+import static org.wso2.carbon.identity.configuration.mgt.core.search.constant.ConditionType.PrimitiveOperator.EQUALS;
 
 public class EventHookHandlerInternalUtils {
 
@@ -211,4 +221,40 @@ public class EventHookHandlerInternalUtils {
         }
     }
 
+    /**
+     *  Returns Event Publisher Configs of the Tenant.
+     *
+     * @param tenantDomain          Tenant Domain
+     * @param eventName             Event Name
+     * @param eventConfigManager    Event Configuration Manager
+     * @throws IdentityEventException if any error occurs
+     */
+    public static EventPublisherConfig getEventPublisherConfigForTenant
+    (String tenantDomain, String eventName, EventConfigManager eventConfigManager) throws IdentityEventException {
+        if (StringUtils.isEmpty(tenantDomain)) {
+            throw new IdentityEventException("Invalid tenant domain: " + tenantDomain);
+        }
+
+        try {
+            Condition condition = createPublisherConfigFilterCondition();
+            Resources publisherConfigResource = EventHookHandlerDataHolder.getInstance().getConfigurationManager()
+                    .getTenantResources(tenantDomain, condition);
+            return eventConfigManager.extractEventPublisherConfig(publisherConfigResource, eventName);
+        } catch (ConfigurationManagementException | IdentityEventException e) {
+            throw new IdentityEventException("Error while retrieving event publisher configuration for tenant.", e);
+        }
+    }
+
+    /**
+     * Helper function for getEventPublisherConfigForTenant.
+     */
+    private static ComplexCondition createPublisherConfigFilterCondition() {
+        List<Condition> conditionList = new ArrayList<>();
+        conditionList.add(new PrimitiveCondition(Constants.RESOURCE_TYPE, EQUALS,
+                Constants.EVENT_PUBLISHER_CONFIG_RESOURCE_TYPE_NAME));
+        conditionList.add(new PrimitiveCondition(Constants.RESOURCE_NAME, EQUALS,
+                Constants.EVENT_PUBLISHER_CONFIG_RESOURCE_NAME));
+        return new ComplexCondition(ConditionType.ComplexOperator.AND, conditionList);
+    }
 }
+
